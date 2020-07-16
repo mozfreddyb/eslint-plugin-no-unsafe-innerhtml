@@ -145,7 +145,6 @@ eslintTester.run("property", rule, {
             ]
         },
 
-
     ],
 
     // Examples of code that should trigger the rule
@@ -329,6 +328,15 @@ eslintTester.run("property", rule, {
             ],
             parserOptions: { ecmaVersion: 6 }
         },
+        { // issue #138
+            code: "x.innerHTML = y()()",
+            errors: [
+                {
+                    message: "Unsafe assignment to innerHTML",
+                    type: "AssignmentExpression"
+                }
+            ]
+        }
 
     ]
 });
