@@ -821,5 +821,25 @@ eslintTester.run("method", rule, {
                 }
             ]
         },
+        {
+            code: "var copies = evil; n.insertAdjacentHTML('beforebegin', copies);",
+            errors: [
+                {
+                    message: /Unsafe call to n.insertAdjacentHTML for argument 1 \(Variable 'copies' initialized with unsafe value at \d+:\d+\)/,
+                    type: "CallExpression"
+                }
+            ],
+            parserOptions: { ecmaVersion: 6 }
+        },
+        {
+            code: "var copies = '<b>safe</b>'; copies = suddenlyUnsafe; n.insertAdjacentHTML('beforebegin', copies);",
+            errors: [
+                {
+                    message: /Unsafe call to n.insertAdjacentHTML for argument 1 \(Variable 'copies' reassigned with unsafe value at \d+:\d+\)/,
+                    type: "CallExpression"
+                }
+            ],
+            parserOptions: { ecmaVersion: 6 }
+        },
     ]
 });

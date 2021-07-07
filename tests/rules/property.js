@@ -95,7 +95,6 @@ eslintTester.run("property", rule, {
             code: "y.innerHTML = '<span>' + 5 + '</span>';",
             parserOptions: { ecmaVersion: 6 }
         },
-
         {
             code: "document.writeln(Sanitizer.escapeHTML`<em>${evil}</em>`);",
             parserOptions: { ecmaVersion: 6 }
@@ -208,6 +207,31 @@ eslintTester.run("property", rule, {
             parser: PATH_TO_BABEL_ESLINT,
         },
 
+        // support for variables that are declared elsewhere
+        {
+            code: "var literalFromElsewhere = '<b>safe</b>'; y.innerHTML = literalFromElsewhere;",
+            parserOptions: { ecmaVersion: 6 }
+        },
+        {
+            code: "const literalFromElsewhereWithInnerExpr = '<b>safe</b>'+'yo'; y.innerHTML = literalFromElsewhereWithInnerExpr;",
+            parserOptions: { ecmaVersion: 6 }
+        },
+        {
+            code: "var multiStepVarSearch = '<b>safe</b>'+'yo'; const copy = multiStepVarSearch; y.innerHTML = copy;",
+            parserOptions: { ecmaVersion: 6 }
+        },
+        {
+            code: "var copies = '<b>safe</b>'; var copies = 'stillOK'; y.innerHTML = copies;",
+            parserOptions: { ecmaVersion: 6 }
+        },
+        {
+            code: "var copies = '<b>safe</b>'; if (monday) { copies = 'stillOK'; }; y.innerHTML = copies;",
+            parserOptions: { ecmaVersion: 6 }
+        },
+        {
+            code: "var msg = '<b>safe</b>'; var altMsg = 'also cool';  if (monday) { msg = altMsg; }; y.innerHTML = msg;",
+            parserOptions: { ecmaVersion: 6 }
+        },
     ],
 
     // Examples of code that should trigger the rule
@@ -515,6 +539,75 @@ eslintTester.run("property", rule, {
                 }
             ],
             parser: PATH_TO_BABEL_ESLINT,
+        },
+        {
+            code: "copy = '<b>safe</b>'; copy = evil; y.innerHTML = copy;",
+            errors: [
+                {
+                    message: "Unsafe assignment to innerHTML",
+                    type: "AssignmentExpression"
+                }
+            ],
+            parserOptions: { ecmaVersion: 6 }
+        },
+        {
+            code: "var copies = '<b>safe</b>'; copies = suddenlyUnsafe; y.innerHTML = copies;",
+            errors: [
+                {
+                    message: /Unsafe assignment to innerHTML \(Variable 'copies' reassigned with unsafe value at \d+:\d+\)/,
+                    type: "AssignmentExpression"
+                }
+            ],
+            parserOptions: { ecmaVersion: 6 }
+        },
+        {
+            code: "var copies = '<b>safe</b>'; var copies = suddenlyUnsafe; y.innerHTML = copies;",
+            errors: [
+                {
+                    message: /Unsafe assignment to innerHTML \(Variable 'copies' initialized with unsafe value at \d+:\d+\)/,
+                    type: "AssignmentExpression"
+                }
+            ],
+            parserOptions: { ecmaVersion: 6 }
+        },
+        {
+            code: "var copies = '<b>safe</b>'; if (monday) { copies = badness }; y.innerHTML = copies;",
+            errors: [
+                {
+                    message: /Unsafe assignment to innerHTML \(Variable 'copies' reassigned with unsafe value at \d+:\d+\)/,
+                    type: "AssignmentExpression"
+                }
+            ],
+            parserOptions: { ecmaVersion: 6 }
+        },
+        {
+            code: `var copies = "<b>safe</b>";
+              (() => {
+                  copies = badness;
+              })();
+              y.innerHTML = copies;
+            `,
+            errors: [
+                {
+                    message: /Unsafe assignment to innerHTML \(Variable 'copies' reassigned with unsafe value at \d+:\d+\)/,
+                    type: "AssignmentExpression"
+                }
+            ],
+            parserOptions: { ecmaVersion: 6 }
+        },
+        {
+            code: `var obj = { prop: "<b>safe</b>" };
+              doSomething(obj);
+              var copies = obj.prop;
+              y.innerHTML = copies;
+            `,
+            errors: [
+                {
+                    message: /Unsafe assignment to innerHTML \(Variable 'copies' initialized with unsafe value at \d+:\d+\)/,
+                    type: "AssignmentExpression"
+                }
+            ],
+            parserOptions: { ecmaVersion: 6 }
         },
     ]
 });
